@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>text2video: UTGVT is all you need!</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #button-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #video-container {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      height: 0;
+      padding-bottom: 36%;
+      margin-top: 20px;
+    }
+
+    #video-player {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #settings-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      background-color: #808080;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #settings-container {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px;
+      background-color: #f2f2f2;
+      border: 1px solid #ccc;
+    }
+
+    #settings-container label {
+      display: block;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>UTGVT</h1>
+
+  <div id="button-container">
+    <button id="select-image-button">选择图片</button>
+    <input type="text" id="text-input" placeholder="请输入文本">
+    <button id="generate-button">生成视频</button>
+    <button id="play-button" disabled>播放</button>
+  </div>
+
+  <div id="video-container">
+    <video id="video-player" controls></video>
+  </div>
+
+  <button id="settings-button">设置</button>
+
+  <div id="settings-container">
+    <button class="close-button" id="close-button">&#10006;</button>
+    <h2>设置</h2>
+    <label>
+      <input type="checkbox" id="optimize-text-checkbox" value="isTextOptimized">
+      开启视频描述文本优化
+    </label>
+  </div>
+
+  <script>
+    // 视频播放器
+    const videoPlayer = document.getElementById('video-player');
+    const playButton = document.getElementById('play-button');
+    const selectImageButton = document.getElementById('select-image-button');
+    const generateButton = document.getElementById('generate-button');
+    const textInput = document.getElementById('text-input');
+    const settingsButton = document.getElementById('settings-button');
+    const settingsContainer = document.getElementById('settings-container');
+    const optimizeTextCheckbox = document.getElementById('optimize-text-checkbox');
+    const closeButton = document.getElementById('close-button');
+    let selectedImage = null;
+    let imageIDs = null;
+    let isPlaying = false;
+    selectImageButton.addEventListener('click', function() {
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+
+      fileInput.addEventListener('change', function() {
+        const formData = new FormData();
+        formData.append('images', fileInput.files[0]);
+
+        fetch('http://localhost:8080/api/upload_images', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+          imageIDs = data.data.images
+
+        })
+        .catch(error => {
+          console.error(error);
+        });
+      });
+
+      fileInput.click();
+  });
+
+
+    generateButton.addEventListener('click', function() {
+      const text = textInput.value;
+      if (!imageIDs || !text) {
+        alert('请先选择图片并输入文本');
+        return;
+      }
+
+      // 进行视频描述文本优化
+      if (optimizeTextCheckbox.checked) {
+        const postData = {
+          text: text
+        };
+
+        fetch('http://localhost:8080/api/optimize_text', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(postData)
+        })
+          .then(response => response.json())
+          .then(data => {
+            console.log(data);
+            text = data.data.text
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+      }
+
+      let requestData = {
+        text: text,
+        images: imageIDs
+      };
+
+      if (optimizeTextCheckbox.checked) {
+        requestData = optimizeText(requestData);
+      }
+
+      const url = 'http://localhost:8080/api/generate_video';
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      })
+        .then(response => response.json())
+        .then(data => {
+          const videoURL = `http://localhost:8080/${data.video}`;
+          videoPlayer.src = videoURL;
+          playButton.disabled = false;
+        })
+        .catch(error => {
+          console.error('生成视频时发生错误:', error);
+        });
+    });
+
+    playButton.addEventListener('click', function() {
+      if (!isPlaying){
+        videoPlayer.play();
+        isPlaying = true;
+        playButton.textContent = '停止';
+      } else {
+        videoPlayer.pause();
+        isPlaying = false;
+        playButton.textContent = '播放';
+      }
+    });
+
+    settingsButton.addEventListener('click', function() {
+      settingsContainer.style.display = 'block';
+    });
+
+    closeButton.addEventListener('click', function() {
+      settingsContainer.style.display = 'none';
+    })
+  </script>
+</body>
+</html>

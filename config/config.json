@@ -1,0 +1,19 @@
+{
+    "app": {
+        "host": "0.0.0.0",
+        "port": 8080
+    },
+    "baidu": {
+        "accessTokenUrl": "https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={}&client_secret={}",
+        "apiKey": "y2gXWVUJXBOATGBc7ceLF9jr",
+        "secretKey": "TeKtq29Iv1HO5a3T4idOUByD1DSiqiQq",
+        "url": "https://aip.baidubce.com/rpc/2.0/brain/creative/ttv/{}?access_token={}",
+        "textUrl": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/qianfan_bloomz_7b_compressed?access_token={}",
+        "textPrompt": "现在我给你一段文本，你需要适当扩写这段文本，使之能够作为文本转视频的输入，帮助生成更高质量的视频。你需要确保，你的扩写不会改变原文本的基本内容。你应该直接给出你的扩写文本，不要加上如何其他无关的内容。以下是原文本：{}"
+    },
+    "video": {
+        "productType": "video",
+		"duration": 30,
+		"resolution": [1280, 720]
+    }
+}
